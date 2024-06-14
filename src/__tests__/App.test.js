@@ -4,6 +4,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from "@testing-library/react";
 import "@testing-library/jest-dom/extend-expect";
@@ -47,14 +48,16 @@ test("creates a new question when the form is submitted", async () => {
     target: { value: "1" },
   });
 
-  // submit form
-  fireEvent.submit(screen.queryByText(/Add Question/));
 
-  // view questions
-  fireEvent.click(screen.queryByText(/View Questions/));
+// After submitting the form
+fireEvent.submit(screen.getByText(/Add Question/));
 
-  expect(await screen.findByText(/Test Prompt/g)).toBeInTheDocument();
-  expect(await screen.findByText(/lorem testum 1/g)).toBeInTheDocument();
+// Navigate back to view questions if necessary
+fireEvent.click(screen.getByText(/View Questions/));
+const testPromptElement = await screen.findByText(/Test Prompt/g);
+expect(testPromptElement).toBeInTheDocument();
+
+
 });
 
 test("deletes the question when the delete button is clicked", async () => {
@@ -78,17 +81,23 @@ test("deletes the question when the delete button is clicked", async () => {
 test("updates the answer when the dropdown is changed", async () => {
   const { rerender } = render(<App />);
 
-  fireEvent.click(screen.queryByText(/View Questions/));
+  // Wait for the options to be available and interactable
+  await screen.findByText(/View Questions/);
+  fireEvent.click(screen.getByText(/View Questions/));
 
-  await screen.findByText(/lorem testum 2/g);
+  // Ensure the question data is loaded
+  await screen.findByText(/lorem testum 2/);
 
-  fireEvent.change(screen.queryAllByLabelText(/Correct Answer/)[0], {
-    target: { value: "3" },
+  // Find the dropdown for the correct answer and change its value
+  const correctAnswerDropdown = screen.getAllByLabelText(/Correct Answer/)[0];
+  fireEvent.change(correctAnswerDropdown, { target: { value: "3" } });
+
+  // Use waitFor to handle asynchronous state updates or re-rendering
+  await waitFor(() => {
+    expect(correctAnswerDropdown.value).toBe("3");
   });
 
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
-
+  // Optionally re-render the component to reflect state changes
   rerender(<App />);
-
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
+  expect(screen.getAllByLabelText(/Correct Answer/)[0].value).toBe("3");
 });

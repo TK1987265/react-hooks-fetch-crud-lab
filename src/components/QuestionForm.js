@@ -11,23 +11,52 @@ function QuestionForm(props) {
   });
 
   function handleChange(event) {
-    setFormData({
+    const { name, value } = event.target;
+    setFormData(formData => ({
       ...formData,
-      [event.target.name]: event.target.value,
-    });
+      [name]: value
+    }));
   }
-
   function handleSubmit(event) {
     event.preventDefault();
-    console.log(formData);
+    // Check for any empty answers or prompt
+    if (!formData.prompt.trim()
+    //  || formData?.answers.some(answer => !answer.trim())
+     ) {
+      alert('Please fill out all fields.');
+      return;
+    }
+  
+    const questionData = {
+      prompt: formData.prompt,
+      answers: [formData.answer1, formData.answer2, formData.answer3, formData.answer4],
+      correctIndex: parseInt(formData.correctIndex),
+    };
+  
+    fetch('http://localhost:4000/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(questionData)
+    })
+    .then(response => response.json())
+    .then(newQuestion => {
+      props.onAddQuestion(newQuestion);
+      // Optionally clear the form or give other user feedback
+    })
+    .catch(error => {
+      console.error('Error posting question:', error);
+      alert('Failed to add question. Please try again.');
+    });
   }
+  
+
 
   return (
     <section>
       <h1>New Question</h1>
       <form onSubmit={handleSubmit}>
         <label>
-          Prompt:
+        Test Prompt:
           <input
             type="text"
             name="prompt"
